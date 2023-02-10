@@ -6,7 +6,7 @@ namespace SaleLib;
 
 public class SaleServiceTest
 {
-    private SaleService _service;
+    private SaleService _saleService;
     private User _user;
     private PhoneCheckService? _checkService;
 
@@ -15,7 +15,7 @@ public class SaleServiceTest
     {
         _checkService = Substitute.For<PhoneCheckService>();
         GivenNotUsedNumber("0987654321");
-        _service = new SaleService(_checkService);
+        _saleService = new SaleService(_checkService);
     }
 
     [Test]
@@ -24,14 +24,14 @@ public class SaleServiceTest
         // arrange
         GivenUserAge(18);
         // act
-        var rs = _service.ApplyNewContract(_user);
+        var rs = _saleService.ApplyNewContract(_user);
         // assert
         rs.Result.Should().Be("success");
 
         // arrange
         GivenUserAge(17);
         // act
-        rs = _service.ApplyNewContract(_user);
+        rs = _saleService.ApplyNewContract(_user);
         // assert
         rs.Result.Should().Be("fail");
     }
@@ -44,7 +44,7 @@ public class SaleServiceTest
         GivenNotUsedNumber("0987654321");
         
         // act
-        var rs = _service.ApplyNewContract(_user);
+        var rs = _saleService.ApplyNewContract(_user);
         
         // assert
         rs.Result.Should().Be("success");
