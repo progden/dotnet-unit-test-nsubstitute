@@ -9,6 +9,7 @@ public class SaleServiceTest
     private SaleService _saleService;
     private User _user;
     private PhoneCheckService? _checkService;
+    private ApplyNewContractResponse _rs;
 
     [SetUp]
     public void SetUp()
@@ -44,11 +45,33 @@ public class SaleServiceTest
         GivenNotUsedNumber("0987654321");
         
         // act
-        var rs = _saleService.ApplyNewContract(_user);
+        _rs = _saleService.ApplyNewContract(_user);
         
         // assert
-        rs.Result.Should().Be("success");
+        _rs.Result.Should().Be("success");
+        CheckServiceShouldBeCalled();
+        
+        
+        // arrange
+        GivenUserAgeAndPhoneNumber(18, "0912345678");
+        GivenUsedNumber("0912345678");
+        
+        // act
+        _rs = _saleService.ApplyNewContract(_user);
+        
+        // assert
+        _rs.Result.Should().Be("fail");
+        CheckServiceShouldBeCalled();
+    }
+
+    private void CheckServiceShouldBeCalled()
+    {
         _checkService.Received().Check(Arg.Any<string>());
+    }
+
+    private void GivenUsedNumber(string phoneNum)
+    {
+        _checkService.Check(phoneNum).Returns(new PhoneCheckResponse(PhoneNum: phoneNum, IsUsed: true));
     }
 
     private void GivenNotUsedNumber(string phoneNum)
