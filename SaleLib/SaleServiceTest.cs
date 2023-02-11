@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using NSubstitute;
+using NSubstitute.ReceivedExtensions;
 using NUnit.Framework;
 
 namespace SaleLib;
@@ -10,13 +11,15 @@ public class SaleServiceTest
     private User _user;
     private PhoneCheckService? _checkService;
     private ApplyNewContractResponse _rs;
+    private ContractRepository? _repo;
 
     [SetUp]
     public void SetUp()
     {
         _checkService = Substitute.For<PhoneCheckService>();
+        _repo = Substitute.For<ContractRepository>();
         GivenNotUsedNumber("0987654321");
-        _saleService = new SaleService(_checkService);
+        _saleService = new SaleService(_checkService, _repo);
     }
 
     [Test]
@@ -64,6 +67,41 @@ public class SaleServiceTest
         CheckServiceShouldBeCalled();
     }
 
+    [Test]
+    public void 使用者層級()
+    {
+        // arrange
+        _repo.ClearReceivedCalls();
+        GivenUserAge(18);
+        // act
+        var rs = _saleService.ApplyNewContract(_user);
+        // assert
+        rs.Result.Should().Be("success");
+        _repo.Received()
+            .Save(Arg.Is<Contract>(c => c.User == _user && c.UserLevel == "L0"));
+        
+        // arrange
+        _repo.ClearReceivedCalls();
+        GivenUserAge(40);
+        // act
+        rs = _saleService.ApplyNewContract(_user);
+        // assert
+        rs.Result.Should().Be("success");
+        _repo.Received()
+            .Save(Arg.Is<Contract>(c => c.User == _user && c.UserLevel == "LMaster"));
+        
+        // arrange
+        _repo.ClearReceivedCalls();
+        GivenUserAge(60);
+        // act
+        rs = _saleService.ApplyNewContract(_user);
+        // assert
+        rs.Result.Should().Be("success");
+        _repo.Received()
+            .Save(Arg.Is<Contract>(c => c.User == _user && c.UserLevel == "LSage"));
+        
+    }
+
     private void CheckServiceShouldBeCalled()
     {
         _checkService.Received().Check(Arg.Any<string>());
@@ -87,5 +125,28 @@ public class SaleServiceTest
     private void GivenUserAge(int age)
     {
         _user = new User {Age = age, PhoneNum = "0987654321"};
+    }
+    
+    [Test]
+    public void 儲存相關測試 () {
+        // arrange
+        _repo.ClearReceivedCalls();
+        GivenUserAge(18);
+        // act
+        var rs = _saleService.ApplyNewContract(_user);
+        // assert
+        rs.Result.Should().Be("success");
+        _repo.Received()
+            .Save(Arg.Any<Contract>());
+
+        
+        // arrange
+        _repo.ClearReceivedCalls();
+        GivenUserAge(17);
+        // act
+        rs = _saleService.ApplyNewContract(_user);
+        // assert
+        rs.Result.Should().Be("fail");
+        _repo.DidNotReceive().Save(Arg.Any<Contract>());
     }
 }
